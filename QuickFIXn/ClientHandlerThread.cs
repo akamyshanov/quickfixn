@@ -62,6 +62,12 @@ namespace QuickFix
         {
             Log("shutdown requested: " + reason);
             isShutdownRequested_ = true;
+
+            var thread = thread_;
+            if (thread == null || !thread.IsAlive)
+            {
+                ShutdownLog();
+            }
         }
 
         public void Join()
@@ -88,12 +94,21 @@ namespace QuickFix
             }
 
             this.Log("shutdown");
+            ShutdownLog();
         }
 
         /// FIXME do real logging
         public void Log(string s)
         {
-            log_.OnEvent(s);
+            var log = log_;
+            if (log == null)
+            {
+                Console.WriteLine("ClientHandlerThread.Log: " + s);
+            }
+            else
+            {
+                log.OnEvent(s);
+            }
         }
 
         /// <summary>
@@ -119,5 +134,17 @@ namespace QuickFix
         }
 
         #endregion
+
+
+        private void ShutdownLog()
+        {
+            var log = log_;
+            log_ = null;
+            if (log != null)
+            {
+                log.Dispose();
+            }
+        }
+
     }
 }
