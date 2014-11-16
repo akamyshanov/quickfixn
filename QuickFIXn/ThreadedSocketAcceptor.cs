@@ -264,6 +264,11 @@ namespace QuickFix
             LogoutAllSessions(force);
             /// FIXME StopSessionTimer();
             /// FIXME Session.UnregisterSessions(GetSessions());
+
+            foreach (var session in sessions_.Values)
+            {
+                session.Dispose();
+            }
         }
 
         /// <summary>
