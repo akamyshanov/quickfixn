@@ -508,44 +508,33 @@ namespace QuickFix
         /// <param name="msgStr"></param>
         public void Next(string msgStr)
         {
-            try
-            {
-                this.Log.OnIncoming(msgStr);
+            NextMessage(msgStr);
+            NextQueued();
+        }
 
-                MsgType msgType = Message.IdentifyType(msgStr);
-                string beginString = Message.ExtractBeginString(msgStr);
+        /// <summary>
+        /// Process a message (in string form) from the counterparty
+        /// </summary>
+        /// <param name="msgStr"></param>
+        private void NextMessage(string msgStr)
+        {
+            this.Log.OnIncoming(msgStr);
 
-                Message message = msgFactory_.Create(beginString, msgType.Obj);
-                message.FromString(
+            MessageBuilder msgBuilder = new MessageBuilder(
                     msgStr,
                     this.ValidateLengthAndChecksum,
                     this.SessionDataDictionary,
                     this.ApplicationDataDictionary,
                     this.msgFactory_);
 
-                Next(message);
-            }
-            catch (InvalidMessage e)
-            {
-                this.Log.OnEvent(e.Message);
-
-                try
-                {
-                    if (MsgType.LOGON.Equals(Message.IdentifyType(msgStr)))
-                        Disconnect("Logon message is not valid");
-                }
-                catch (MessageParseError)
-                { }
-
-                throw e;
-            }
+            Next(msgBuilder);
         }
 
         /// <summary>
-        /// Process a message from the counterparty. (TODO: consider changing this method to private in v2.0.)
+        /// Process a message from the counterparty.
         /// </summary>
         /// <param name="message"></param>
-        public void Next(Message message)
+        internal void Next(MessageBuilder msgBuilder)
         {
             if (!IsSessionTime)
             {
@@ -553,19 +542,21 @@ namespace QuickFix
                 return;
             }
 
-            if (appDoesEarlyIntercept_)
-                ((IApplicationExt)Application).FromEarlyIntercept(message, this.SessionID);
-
             if (IsNewSession)
                 state_.Reset("New session (detected in Next(Message))");
 
-            Header header = message.Header;
-            string msgType = "";
+            Message message = null; // declared outside of try-block so that catch-blocks can use it
 
             try
             {
-                msgType = header.GetField(Fields.Tags.MsgType);
-                string beginString = header.GetField(Fields.Tags.BeginString);
+                message = msgBuilder.Build();
+
+                if (appDoesEarlyIntercept_)
+                    ((IApplicationExt)Application).FromEarlyIntercept(message, this.SessionID);
+
+                Header header = message.Header;
+                string msgType = msgBuilder.MsgType.Obj;
+                string beginString = msgBuilder.BeginString;
 
                 if (!beginString.Equals(this.SessionID.BeginString))
                     throw new UnsupportedVersion();
@@ -615,15 +606,29 @@ namespace QuickFix
                 }
 
             }
+            catch (InvalidMessage e)
+            {
+                this.Log.OnEvent(e.Message);
+
+                try
+                {
+                    if (MsgType.LOGON.Equals(msgBuilder.MsgType.Obj))
+                        Disconnect("Logon message is not valid");
+                }
+                catch (MessageParseError)
+                { }
+
+                throw e;
+            }
             catch (TagException e)
             {
                 if (null != e.InnerException)
                     this.Log.OnEvent(e.InnerException.Message);
-                GenerateReject(message, e.sessionRejectReason, e.Field);
+                GenerateReject(msgBuilder, e.sessionRejectReason, e.Field);
             }
             catch (UnsupportedVersion)
             {
-                if (MsgType.LOGOUT.Equals(msgType))
+                if (MsgType.LOGOUT.Equals(msgBuilder.MsgType.Obj))
                 {
                     NextLogout(message);
                 }
@@ -647,13 +652,13 @@ namespace QuickFix
                 }
                 else
                 {
-                    if (msgType.Equals(Fields.MsgType.LOGON))
+                    if (MsgType.LOGON.Equals(msgBuilder.MsgType.Obj))
                     {
                         this.Log.OnEvent("Required field missing from logon");
                         Disconnect("Required field missing from logon");
                     }
                     else
-                        GenerateReject(message, new QuickFix.FixValues.SessionRejectReason(SessionRejectReason.REQUIRED_TAG_MISSING, "Required Tag Missing"), e.Field);
+                        GenerateReject(msgBuilder, new QuickFix.FixValues.SessionRejectReason(SessionRejectReason.REQUIRED_TAG_MISSING, "Required Tag Missing"), e.Field);
                 }
             }
             catch (RejectLogon e)
@@ -662,7 +667,6 @@ namespace QuickFix
                 Disconnect(e.ToString());
             }
 
-            NextQueued();
             Next();
         }
 
@@ -718,7 +722,6 @@ namespace QuickFix
             else
             {
                 state_.IncrNextTargetMsgSeqNum();
-                NextQueued();
             }
 
             if (this.IsLoggedOn)
@@ -731,7 +734,6 @@ namespace QuickFix
                 return;
             GenerateHeartbeat(testRequest);
             state_.IncrNextTargetMsgSeqNum();
-            NextQueued();
         }
 
         protected void NextResendRequest(Message resendReq)
@@ -876,7 +878,6 @@ namespace QuickFix
             if (!Verify(heartbeat))
                 return;
             state_.IncrNextTargetMsgSeqNum();
-            NextQueued();
         }
 
         protected void NextSequenceReset(Message sequenceReset)
@@ -1348,6 +1349,11 @@ namespace QuickFix
             return SendRaw(heartbeat, 0);
         }
 
+        internal bool GenerateReject(MessageBuilder msgBuilder, FixValues.SessionRejectReason reason, int field=0)
+        {
+            return GenerateReject(msgBuilder.RejectableMessage(), reason, field);
+        }
+
         public bool GenerateReject(Message message, FixValues.SessionRejectReason reason)
         {
             return GenerateReject(message, reason, 0);
@@ -1573,14 +1579,12 @@ namespace QuickFix
                 }
                 else
                 {
-                    Next(msg.ToString());
+                    NextMessage(msg.ToString());
                 }
                 return true;
             }
             return false;
         }
-
-
 
         private bool IsAdminMessage(Message msg)
         {
