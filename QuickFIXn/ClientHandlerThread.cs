@@ -6,17 +6,32 @@ namespace QuickFix
 {
     // TODO v2.0 - consider changing to internal
 
+
     /// <summary>
     /// Created by a ThreadedSocketReactor to handle a client connection.
     /// Each ClientHandlerThread has a SocketReader which reads
     /// from the socket.
     /// </summary>
-    public class ClientHandlerThread : IResponder
+    public class ClientHandlerThread : IResponder, IDisposable
     {
+        internal class ExitedEventArgs : EventArgs
+        {
+            public ClientHandlerThread ClientHandlerThread { get; private set; }
+
+            public ExitedEventArgs(ClientHandlerThread clientHandlerThread)
+            {
+                this.ClientHandlerThread = clientHandlerThread;
+            }
+        }
+
+        internal delegate void ExitedEventHandler(object sender, ClientHandlerThread.ExitedEventArgs e);
+        internal event ExitedEventHandler Exited;
+
+        public long Id { get; private set; }
+
         private Thread thread_ = null;
         private volatile bool isShutdownRequested_ = false;
         private SocketReader socketReader_;
-        private long id_;
         private FileLog log_;
 
         [Obsolete("Don't use this constructor")]
@@ -48,7 +63,7 @@ namespace QuickFix
             // FIXME - do something more flexible than hardcoding a filelog
             log_ = new FileLog(debugLogFilePath, new SessionID("ClientHandlerThread", clientId.ToString(), "Debug"));
 
-            id_ = clientId;
+            this.Id = clientId;
             socketReader_ = new SocketReader(tcpClient, socketSettings, this);
         }
 
@@ -62,12 +77,6 @@ namespace QuickFix
         {
             Log("shutdown requested: " + reason);
             isShutdownRequested_ = true;
-
-            var thread = thread_;
-            if (thread == null || !thread.IsAlive)
-            {
-                ShutdownLog();
-            }
         }
 
         public void Join()
@@ -94,21 +103,19 @@ namespace QuickFix
             }
 
             this.Log("shutdown");
-            ShutdownLog();
+            OnExited();
+        }
+
+        protected void OnExited()
+        {
+            if (Exited != null)
+                Exited(this, new ExitedEventArgs(this));
         }
 
         /// FIXME do real logging
         public void Log(string s)
         {
-            var log = log_;
-            if (log == null)
-            {
-                Console.WriteLine("ClientHandlerThread.Log: " + s);
-            }
-            else
-            {
-                log.OnEvent(s);
-            }
+            log_.OnEvent(s);
         }
 
         /// <summary>
@@ -130,21 +137,23 @@ namespace QuickFix
         public void Disconnect()
         {
             Shutdown("Disconnected");
-            socketReader_.Dispose();
         }
 
         #endregion
 
-
-        private void ShutdownLog()
+        public void Dispose()
         {
-            var log = log_;
-            log_ = null;
-            if (log != null)
+            if (socketReader_ != null)
             {
-                log.Dispose();
+                socketReader_.Dispose();
+                socketReader_ = null;
+            }
+
+            if (log_ != null)
+            {
+                log_.Dispose();
+                log_ = null;
             }
         }
-
     }
 }
