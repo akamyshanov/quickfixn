@@ -44,6 +44,7 @@ namespace QuickFix
         public const string VALIDATE_FIELDS_OUT_OF_ORDER = "ValidateFieldsOutOfOrder";
         public const string VALIDATE_FIELDS_HAVE_VALUES = "ValidateFieldsHaveValues";
         public const string VALIDATE_USER_DEFINED_FIELDS = "ValidateUserDefinedFields";
+        public const string VALIDATE_LENGTH_AND_CHECKSUM = "ValidateLengthAndChecksum";
         public const string DATA_DICTIONARY = "DataDictionary";
         public const string TRANSPORT_DATA_DICTIONARY = "TransportDataDictionary";
         public const string APP_DATA_DICTIONARY = "AppDataDictionary";
@@ -57,6 +58,8 @@ namespace QuickFix
         public const string MAX_MESSAGES_IN_RESEND_REQUEST = "MaxMessagesInResendRequest";
         public const string SEND_LOGOUT_BEFORE_TIMEOUT_DISCONNECT = "SendLogoutBeforeDisconnectFromTimeout";
         public const string SOCKET_NODELAY = "SocketNodelay";
+        public const string SOCKET_SEND_BUFFER_SIZE = "SocketSendBufferSize";
+        public const string SOCKET_RECEIVE_BUFFER_SIZE = "SocketReceiveBufferSize";
         public const string IGNORE_POSSDUP_RESEND_REQUESTS = "IgnorePossDupResendRequests";
         public const string RESETSEQUENCE_MESSAGE_REQUIRES_ORIGSENDINGTIME = "RequiresOrigSendingTime";
         public const string CHECK_LATENCY = "CheckLatency";
