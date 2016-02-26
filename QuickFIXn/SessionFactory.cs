@@ -120,10 +120,8 @@ namespace QuickFix
                 session.SendLogoutBeforeTimeoutDisconnect = settings.GetBool(SessionSettings.SEND_LOGOUT_BEFORE_TIMEOUT_DISCONNECT);
             if (settings.Has(SessionSettings.IGNORE_POSSDUP_RESEND_REQUESTS))
                 session.IgnorePossDupResendRequests = settings.GetBool(SessionSettings.IGNORE_POSSDUP_RESEND_REQUESTS);
-            /** FIXME - implement optional settings
             if (settings.Has(SessionSettings.VALIDATE_LENGTH_AND_CHECKSUM))
-                session.SetValidateLengthAndChecksum(settings.GetBool(SessionSettings.VALIDATE_LENGTH_AND_CHECKSUM));
-            */
+                session.ValidateLengthAndChecksum = settings.GetBool(SessionSettings.VALIDATE_LENGTH_AND_CHECKSUM);
             if (settings.Has(SessionSettings.RESETSEQUENCE_MESSAGE_REQUIRES_ORIGSENDINGTIME))
                 session.RequiresOrigSendingTime = settings.GetBool(SessionSettings.RESETSEQUENCE_MESSAGE_REQUIRES_ORIGSENDINGTIME);
 
@@ -137,7 +135,7 @@ namespace QuickFix
             if (settings.Has(settingsKey))
                 path = settings.GetString(settingsKey);
             else
-                path = beginString.Replace("\\.", "") + ".xml";
+                path = beginString.Replace(".", "") + ".xml";
 
             if (!dictionariesByPath_.TryGetValue(path, out dd))
             {
