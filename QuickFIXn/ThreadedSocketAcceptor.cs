@@ -142,6 +142,12 @@ namespace QuickFix
             if (!socketDescriptorForAddress_.TryGetValue(socketEndPoint, out descriptor))
             {
                 descriptor = new AcceptorSocketDescriptor(socketEndPoint, socketSettings, dict);
+
+                if (!_disposed && isStarted_)
+                {
+                    descriptor.SocketReactor.Start();
+                }
+
                 socketDescriptorForAddress_[socketEndPoint] = descriptor;
             }
 
