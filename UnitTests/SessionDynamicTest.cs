@@ -59,9 +59,11 @@ namespace UnitTests
         const string Host = "127.0.0.1";
         const int ConnectPort = 55100;
         const int AcceptPort = 55101;
+        const int AcceptPort2 = 55102;
         const string ServerCompID = "dummy";
         const string StaticInitiatorCompID = "ini01";
         const string StaticAcceptorCompID = "acc01";
+        const string StaticAcceptorCompID2 = "acc02";
 
         const string FIXMessageEnd = @"\x0110=\d{3}\x01";
         const string FIXMessageDelimit = @"(8=FIX|\A).*?(" + FIXMessageEnd + @"|\z)";
@@ -214,10 +216,10 @@ namespace UnitTests
              socketState._socket.BeginReceive(socketState._rxBuffer, 0, socketState._rxBuffer.Length, SocketFlags.None, new AsyncCallback(ProcessRXData), socketState);;
         }
 
-        Socket ConnectToEngine()
+        Socket ConnectToEngine(int port = AcceptPort)
         {
             var address = IPAddress.Parse(Host);
-            var endpoint = new IPEndPoint(address, AcceptPort);
+            var endpoint = new IPEndPoint(address, port);
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
@@ -334,6 +336,25 @@ namespace UnitTests
 
             Thread.Sleep(500);
             ClearLogs();
+        }
+
+        [Test]
+        public void AddSessionDynamicWithDifferentPortTest()
+        {
+            StartEngine(false);
+
+            // Add the dynamic acceptor with another port and ensure that we can now log on
+            string dynamicCompID = "acc10";
+            var sessionID = CreateSessionID(dynamicCompID);
+            var sessionConfig = CreateSessionConfig(dynamicCompID, false);
+            sessionConfig.SetString(SessionSettings.SOCKET_ACCEPT_PORT, AcceptPort2.ToString());
+
+            _acceptor.AddSession(sessionID, sessionConfig);
+
+            var socket = ConnectToEngine(AcceptPort2);
+            SendLogon(socket, dynamicCompID);
+
+            Assert.IsTrue(WaitForLogonStatus(dynamicCompID), "Failde to logon dynamic added acceptor session with another port");
         }
 
         [Test]
