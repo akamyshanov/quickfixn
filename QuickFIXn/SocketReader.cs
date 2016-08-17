@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.IO;
 using System;
+using System.Linq;
 
 namespace QuickFix
 {
@@ -10,6 +11,7 @@ namespace QuickFix
     /// </summary>
     public class SocketReader : IDisposable
     {
+        private readonly IAssumedSessionSet assumedSessionSet_;
         public const int BUF_SIZE = 4096;
         byte[] readBuffer_ = new byte[BUF_SIZE];
         private Parser parser_ = new Parser();
@@ -30,7 +32,18 @@ namespace QuickFix
         }
 
         public SocketReader(TcpClient tcpClient, SocketSettings settings, ClientHandlerThread responder)
+            : this(tcpClient, settings, responder, null)
         {
+            
+        }
+
+        internal SocketReader(
+            TcpClient tcpClient,
+            SocketSettings settings,
+            ClientHandlerThread responder,
+            IAssumedSessionSet assumedSessionSet)
+        {
+            assumedSessionSet_ = assumedSessionSet;
             tcpClient_ = tcpClient;
             responder_ = responder;
             stream_ = Transport.StreamFactory.CreateServerStream(tcpClient, settings, responder.GetLog());
@@ -138,6 +151,13 @@ namespace QuickFix
                         DisconnectClient();
                         return;
                     }
+                    else if(IsAssumedSession(qfSession_.SessionID))
+                    {
+                        this.Log("ERROR: Disconnecting; received message for unknown session: " + msg);
+                        qfSession_ = null;
+                        DisconnectClient();
+                        return;
+                    }
                     else
                     {
                         if (!HandleNewSession(msg))
@@ -236,6 +256,12 @@ namespace QuickFix
         public void HandleException(Session quickFixSession, System.Exception cause, TcpClient client)
         {
             HandleExceptionInternal(quickFixSession, cause);
+        }
+
+        private bool IsAssumedSession(SessionID sessionID)
+        {
+            return assumedSessionSet_ != null 
+                   && !assumedSessionSet_.GetSessionIds().Any(id => id.Equals(sessionID));
         }
 
         private void HandleExceptionInternal(Session quickFixSession, System.Exception cause)
