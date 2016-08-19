@@ -142,12 +142,6 @@ namespace QuickFix
             if (!socketDescriptorForAddress_.TryGetValue(socketEndPoint, out descriptor))
             {
                 descriptor = new AcceptorSocketDescriptor(socketEndPoint, socketSettings, dict);
-
-                if (!_disposed && isStarted_)
-                {
-                    descriptor.SocketReactor.Start();
-                }
-
                 socketDescriptorForAddress_[socketEndPoint] = descriptor;
             }
 
@@ -169,6 +163,13 @@ namespace QuickFix
                 {
                     AcceptorSocketDescriptor descriptor = GetAcceptorSocketDescriptor(dict);
                     Session session = sessionFactory_.Create(sessionID, dict);
+
+                    // start descriptor if it was just created and if acceptor is already started
+                    if (isStarted_ && !_disposed && !descriptor.SocketReactor.IsStarted)
+                    {
+                        descriptor.SocketReactor.Start();
+                    }
+
                     descriptor.AcceptSession(session);
                     sessions_[sessionID] = session;
                     return true;
