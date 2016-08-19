@@ -57,8 +57,11 @@ namespace QuickFix
             acceptorDescriptor_ = acceptorDescriptor;
         }
 
+        public bool IsStarted { get; private set; }
+
         public void Start()
         {
+            IsStarted = true;
             serverThread_ = new Thread(new ThreadStart(Run));
             serverThread_.Start();
         }
