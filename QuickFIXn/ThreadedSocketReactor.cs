@@ -23,6 +23,11 @@ namespace QuickFix
             get { lock (sync_) { return state_; } }
         }
 
+        public bool IsStarted
+        {
+            get { return serverThread_ != null; }
+        }
+
         #endregion
 
         #region Private Members
