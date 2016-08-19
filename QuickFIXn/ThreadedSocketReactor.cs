@@ -23,6 +23,11 @@ namespace QuickFix
             get { lock (sync_) { return state_; } }
         }
 
+        public bool IsStarted
+        {
+            get { return serverThread_ != null; }
+        }
+
         #endregion
 
         #region Private Members
@@ -57,11 +62,8 @@ namespace QuickFix
             acceptorDescriptor_ = acceptorDescriptor;
         }
 
-        public bool IsStarted { get; private set; }
-
         public void Start()
         {
-            IsStarted = true;
             serverThread_ = new Thread(new ThreadStart(Run));
             serverThread_.Start();
         }
