@@ -13,56 +13,7 @@ namespace QuickFix
     /// </summary>
     public class ThreadedSocketAcceptor : IAcceptor
     {
-        class AcceptorSocketDescriptor
-        {
-            #region Properties
-
-            public ThreadedSocketReactor SocketReactor
-            {
-                get { return socketReactor_; }
-            }
-
-            public IPEndPoint Address
-            {
-                get { return socketEndPoint_; }
-            }
-
-            #endregion
-
-            #region Private Members
-
-            private ThreadedSocketReactor socketReactor_;
-            private IPEndPoint socketEndPoint_;
-            private Dictionary<SessionID, Session> acceptedSessions_ = new Dictionary<SessionID, Session>();
-
-            #endregion
-            
-            public AcceptorSocketDescriptor(IPEndPoint socketEndPoint, SocketSettings socketSettings, QuickFix.Dictionary sessionDict)
-            {
-                socketEndPoint_ = socketEndPoint;
-                socketReactor_ = new ThreadedSocketReactor(socketEndPoint_, socketSettings, sessionDict);
-            }
-
-            public void AcceptSession(Session session)
-            {
-                acceptedSessions_[session.SessionID] = session;
-            }
-
-            /// <summary>
-            /// Remove a session from those tied to this socket.
-            /// </summary>
-            /// <param name="sessionID">ID of session to be removed</param>
-            /// <returns>true if session removed, false if not found</returns>
-            public bool RemoveSession(SessionID sessionID)
-            {
-                return acceptedSessions_.Remove(sessionID);
-            }
-
-            public Dictionary<SessionID, Session> GetAcceptedSessions()
-            {
-                return new Dictionary<SessionID, Session>(acceptedSessions_);
-            }
-        }
+        
 
         private Dictionary<SessionID, Session> sessions_ = new Dictionary<SessionID, Session>();
         private SessionSettings settings_;
@@ -163,6 +114,13 @@ namespace QuickFix
                 {
                     AcceptorSocketDescriptor descriptor = GetAcceptorSocketDescriptor(dict);
                     Session session = sessionFactory_.Create(sessionID, dict);
+
+                    // start descriptor if it was just created and if acceptor is already started
+                    if (isStarted_ && !_disposed && !descriptor.SocketReactor.IsStarted)
+                    {
+                        descriptor.SocketReactor.Start();
+                    }
+
                     descriptor.AcceptSession(session);
                     sessions_[sessionID] = session;
                     return true;
