@@ -61,6 +61,22 @@ namespace QuickFix
         {
             string path = settings.Get(sessionID).GetString(SessionSettings.FILE_STORE_PATH);
 
+            var encoding = settings.Get(sessionID).Has(SessionSettings.ENCODING)
+                ? Encoding.GetEncoding(settings.Get(sessionID).GetString(SessionSettings.ENCODING))
+                : SessionFactory.DefaultEncoding;
+
+            Init(path, sessionID, encoding);
+            open();
+        }
+
+        public FileStore(string path, SessionID sessionID, Encoding encoding = null)
+        {
+            Init(path, sessionID, encoding);
+            open();
+        }
+
+        private void Init(string path, SessionID sessionID, Encoding encoding = null)
+        {
             if (!System.IO.Directory.Exists(path))
                 System.IO.Directory.CreateDirectory(path);
 
@@ -71,11 +87,7 @@ namespace QuickFix
             headerFileName_ = System.IO.Path.Combine(path, prefix + ".header");
             sessionFileName_ = System.IO.Path.Combine(path, prefix + ".session");
 
-            encoding_ = settings.Get(sessionID).Has(SessionSettings.ENCODING)
-                ? Encoding.GetEncoding(settings.Get(sessionID).GetString(SessionSettings.ENCODING))
-                : SessionFactory.DefaultEncoding;
-
-            open();
+            encoding_ = encoding ?? SessionFactory.DefaultEncoding;
         }
 
         private void open()
