@@ -2,6 +2,7 @@
 using System.IO;
 using System;
 using System.Linq;
+using System.Text;
 
 namespace QuickFix
 {
@@ -13,12 +14,13 @@ namespace QuickFix
     {
         public const int BUF_SIZE = 4096;
         byte[] readBuffer_ = new byte[BUF_SIZE];
-        private Parser parser_ = new Parser();
+        private Parser parser_;
         private Session qfSession_; //will be null when initialized
         private Stream stream_;     //will be null when initialized
         private TcpClient tcpClient_;
         private ClientHandlerThread responder_;
         private readonly AcceptorSocketDescriptor acceptorDescriptor_;
+        private Encoding encoding_;
 
         /// <summary>
         /// Keep a handle to the current outstanding read request (if any)
@@ -43,6 +45,8 @@ namespace QuickFix
             ClientHandlerThread responder,
             AcceptorSocketDescriptor acceptroDescriptor)
         {
+            parser_ = new Parser(settings.Encoding);
+            encoding_ = settings.Encoding;
             tcpClient_ = tcpClient;
             responder_ = responder;
             acceptorDescriptor_ = acceptroDescriptor;
@@ -56,7 +60,7 @@ namespace QuickFix
             {
                 int bytesRead = ReadSome(readBuffer_, 1000);
                 if (bytesRead > 0)
-                    parser_.AddToStream(System.Text.Encoding.UTF8.GetString(readBuffer_, 0, bytesRead));
+                    parser_.AddToStream(encoding_.GetString(readBuffer_, 0, bytesRead));
                 else if (null != qfSession_)
                 {
                     qfSession_.Next();
@@ -330,7 +334,7 @@ namespace QuickFix
 
         public int Send(string data)
         {
-            byte[] rawData = System.Text.Encoding.UTF8.GetBytes(data);
+            byte[] rawData = encoding_.GetBytes(data);
             stream_.Write(rawData, 0, rawData.Length);
             return rawData.Length;
         }
