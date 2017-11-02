@@ -31,6 +31,8 @@ namespace QuickFix
         private System.IO.FileStream msgFile_;
         private System.IO.StreamWriter headerFile_;
 
+        private Encoding encoding_;
+
         private MemoryStore cache_ = new MemoryStore();
 
         System.Collections.Generic.Dictionary<int, MsgDef> offsets_ = new Dictionary<int, MsgDef>();
@@ -55,7 +57,25 @@ namespace QuickFix
             return prefix.ToString();
         }
 
-        public FileStore(string path, SessionID sessionID)
+        public FileStore(SessionID sessionID, SessionSettings settings)
+        {
+            string path = settings.Get(sessionID).GetString(SessionSettings.FILE_STORE_PATH);
+
+            var encoding = settings.Get(sessionID).Has(SessionSettings.ENCODING)
+                ? Encoding.GetEncoding(settings.Get(sessionID).GetString(SessionSettings.ENCODING))
+                : SessionFactory.DefaultEncoding;
+
+            Init(path, sessionID, encoding);
+            open();
+        }
+
+        public FileStore(string path, SessionID sessionID, Encoding encoding = null)
+        {
+            Init(path, sessionID, encoding);
+            open();
+        }
+
+        private void Init(string path, SessionID sessionID, Encoding encoding = null)
         {
             if (!System.IO.Directory.Exists(path))
                 System.IO.Directory.CreateDirectory(path);
@@ -67,7 +87,7 @@ namespace QuickFix
             headerFileName_ = System.IO.Path.Combine(path, prefix + ".header");
             sessionFileName_ = System.IO.Path.Combine(path, prefix + ".session");
 
-            open();
+            encoding_ = encoding ?? SessionFactory.DefaultEncoding;
         }
 
         private void open()
@@ -183,7 +203,7 @@ namespace QuickFix
                     byte[] msgBytes = new byte[offsets_[i].size];
                     msgFile_.Read(msgBytes, 0, msgBytes.Length);
 
-                    messages.Add(Encoding.UTF8.GetString(msgBytes));
+                    messages.Add(encoding_.GetString(msgBytes));
                 }
             }
 
@@ -200,7 +220,7 @@ namespace QuickFix
             msgFile_.Seek(0, System.IO.SeekOrigin.End);
 
             long offset = msgFile_.Position;
-            byte[] msgBytes = Encoding.UTF8.GetBytes(msg);
+            byte[] msgBytes = encoding_.GetBytes(msg);
             int size = msgBytes.Length;
 
             StringBuilder b = new StringBuilder();
