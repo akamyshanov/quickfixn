@@ -32,7 +32,7 @@ namespace QuickFix
         private Thread thread_ = null;
         private volatile bool isShutdownRequested_ = false;
         private SocketReader socketReader_;
-        private FileLog log_;
+        private ILog log_;
 
         [Obsolete("Don't use this constructor")]
         public ClientHandlerThread(TcpClient tcpClient, long clientId)
@@ -67,8 +67,17 @@ namespace QuickFix
             else if (settingsDict.Has(SessionSettings.FILE_LOG_PATH))
                 debugLogFilePath = settingsDict.GetString(SessionSettings.FILE_LOG_PATH);
 
-            // FIXME - do something more flexible than hardcoding a filelog
-            log_ = new FileLog(debugLogFilePath, new SessionID("ClientHandlerThread", clientId.ToString(), "Debug"));
+            var sessionId = new SessionID("ClientHandlerThread", clientId.ToString(), "Debug");
+            try
+            {
+                // FIXME - do something more flexible than hardcoding a filelog
+                log_ = new FileLog(debugLogFilePath, sessionId);
+            }
+            catch
+            {
+                // TODO: fix this the correct way
+                log_ = new ScreenLog(sessionId, true, true, true);
+            }
 
             this.Id = clientId;
             socketReader_ = new SocketReader(tcpClient, socketSettings, this, acceptorDescriptor);
