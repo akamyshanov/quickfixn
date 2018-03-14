@@ -11,6 +11,7 @@
     <Version>1.8.0</Version>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <RootNamespace>QuickFix</RootNamespace>
+    <PackageId>$(PackageIdPrefix)$(AssemblyName)</PackageId>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
