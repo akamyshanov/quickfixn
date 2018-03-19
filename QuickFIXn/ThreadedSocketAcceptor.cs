@@ -99,8 +99,8 @@ namespace QuickFix
         /// <summary>
         /// Create session, either at start-up or as an ad-hoc operation
         /// </summary>
-        /// <param name="sessionID">ID of new session<param>
-        /// <param name="dict">config settings for new session</param></param>
+        /// <param name="sessionID">ID of new session</param>
+        /// <param name="dict">config settings for new session</param>
         /// <returns>true if session added successfully, false if session already exists or is not an acceptor</returns>
         private bool CreateSession(SessionID sessionID, Dictionary dict)
         {
@@ -130,11 +130,11 @@ namespace QuickFix
         {
             lock (sync_)
             {
-                /// FIXME StartSessionTimer();
+                // FIXME StartSessionTimer();
                 foreach (AcceptorSocketDescriptor socketDescriptor in socketDescriptorForAddress_.Values)
                 {
                     socketDescriptor.SocketReactor.Start();
-                    /// FIXME log_.Info("Listening for connections on " + socketDescriptor.getAddress());
+                    // FIXME log_.Info("Listening for connections on " + socketDescriptor.getAddress());
                 }
             }
         }
@@ -146,7 +146,7 @@ namespace QuickFix
                 foreach (AcceptorSocketDescriptor socketDescriptor in socketDescriptorForAddress_.Values)
                 {
                     socketDescriptor.SocketReactor.Shutdown();
-                    /// FIXME log_.Info("No longer accepting connections on " + socketDescriptor.getAddress());
+                    // FIXME log_.Info("No longer accepting connections on " + socketDescriptor.getAddress());
                 }
             }
         }
@@ -161,7 +161,7 @@ namespace QuickFix
                 }
                 catch (System.Exception e)
                 {
-                    /// FIXME logError(session.getSessionID(), "Error during logout", e);
+                    // FIXME logError(session.getSessionID(), "Error during logout", e);
                     System.Console.WriteLine("Error during logout of Session " + session.SessionID + ": " + e.Message);
                 }
             }
@@ -177,7 +177,7 @@ namespace QuickFix
                     }
                     catch (System.Exception e)
                     {
-                        /// FIXME logError(session.getSessionID(), "Error during disconnect", e);
+                        // FIXME logError(session.getSessionID(), "Error during disconnect", e);
                         System.Console.WriteLine("Error during disconnect of Session " + session.SessionID + ": " + e.Message);
                     }
                 }
@@ -263,8 +263,8 @@ namespace QuickFix
             DisposeSessions();
             sessions_.Clear();
 
-            /// FIXME StopSessionTimer();
-            /// FIXME Session.UnregisterSessions(GetSessions());
+            // FIXME StopSessionTimer();
+            // FIXME Session.UnregisterSessions(GetSessions());
         }
 
         /// <summary>
@@ -300,8 +300,8 @@ namespace QuickFix
         /// <summary>
         /// Add new session as an ad-oc (dynamic) operation
         /// </summary>
-        /// <param name="sessionID">ID of new session<param>
-        /// <param name="dict">config settings for new session</param></param>
+        /// <param name="sessionID">ID of new session</param>
+        /// <param name="dict">config settings for new session</param>
         /// <returns>true if session added successfully, false if session already exists or is not an acceptor</returns>
         public bool AddSession(SessionID sessionID, Dictionary dict)
         {
